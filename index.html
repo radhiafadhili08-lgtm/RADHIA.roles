@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O-Level Student Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>O-Level Student Management System</h1>
+
+    <section id="registration">
+        <h2>Register New Student</h2>
+        <form id="regForm">
+            <label for="name">Full Name:</label>
+            <input id="name" type="text" required>
+            
+            <label for="id">Student ID:</label>
+            <input id="id" type="text" required>
+            
+            <label for="gender">Gender:</label>
+            <select id="gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+            
+            <label for="age">Age:</label>
+            <input id="age" type="number" min="10" max="20" required>
+            
+            <label for="form">Current Form Level:</label>
+            <select id="form">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+            </select>
+            
+            <button type="submit">Register</button>
+        </form>
+    </section>
+
+    <section id="search">
+        <h2>Search Students</h2>
+        <input id="searchInput" placeholder="Search by name or ID">
+    </section>
+
+    <section id="list">
+        <h2>Student List</h2>
+        <table id="studentTable">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Current Form</th>
+                    <th>Average Score</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <div id="details" style="display: none;">
+        <h2>Student Details</h2>
+        <div id="info"></div>
+        <h3>Academic Performances</h3>
+        <table id="perfTable">
+            <thead>
+                <tr>
+                    <th>Form</th>
+                    <th>Math</th>
+                    <th>English</th>
+                    <th>Science</th>
+                    <th>Social Studies</th>
+                    <th>Average</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h3>Add/Update Performance</h3>
+        <form id="perfForm">
+            <label for="pform">Form:</label>
+            <input id="pform" type="number" min="1" max="4" required>
+            
+            <label for="pmath">Mathematics:</label>
+            <input id="pmath" type="number" min="0" max="100" required>
+            
+            <label for="peng">English:</label>
+            <input id="peng" type="number" min="0" max="100" required>
+            
+            <label for="psci">Science:</label>
+            <input id="psci" type="number" min="0" max="100" required>
+            
+            <label for="psoc">Social Studies:</label>
+            <input id="psoc" type="number" min="0" max="100" required>
+            
+            <button type="submit">Add/Update</button>
+        </form>
+        <button id="promoteBtn">Promote to Next Form</button>
+        <button id="closeDetails">Close</button>
+    </div>
+
+    <script>
+        let students = [];
+
+        // Register student
+        const regForm = document.getElementById('regForm');
+        regForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('id').value.trim();
+            if (students.some(s => s.id === id)) {
+                alert('Student ID must be unique.');
+                return;
+            }
+            const name = document.getElementById('name').value.trim();
+            if (!name) {
+                alert('Full Name is required.');
+                return;
+            }
+            const gender = document.getElementById('gender').value;
+            const age = parseInt(document.getElementById('age').value);
+            if (isNaN(age) || age < 10 || age > 20) {
+                alert('Please enter a valid age between 10 and 20.');
+                return;
+            }
+            const form = parseInt(document.getElementById('form').value);
+            const student = {
+                id,
+                name,
+                age,
+                gender,
+                form,
+                performance: []
+            };
+            students.push(student);
+            regForm.reset();
+            updateList();
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', updateList);
+
+        // Update student list
+        function updateList() {
+            const tbody = document.querySelector('#studentTable tbody');
+            tbody.innerHTML = '';
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredStudents = students.filter(s => 
+                s.id.toLowerCase().includes(searchTerm) || s.name.toLowerCase().includes(searchTerm)
+            );
+            filteredStudents.forEach(s => {
+                const avg = getAverageScore(s);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${s.id}</td>
+                    <td>${s.name}</td>
+                    <td>${s.form}</td>
+                    <td>${avg}</td>
+                    <td>
+                        <button onclick="viewDetails('${s.id}')">View</button>
+                        <button onclick="deleteStudent('${s.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Calculate average score (from latest performance if available)
+        function getAverageScore(student) {
+            if (student.performance.length === 0) return 'N/A';
+            const lastPerf = student.performance[student.performance.length - 1].subjects;
+            const sum = lastPerf.math + lastPerf.english + lastPerf.science + lastPerf.social;
+            return (sum / 4).toFixed(2);
+        }
+
+        // Delete student
+        function deleteStudent(id) {
+            students = students.filter(s => s.id !== id);
+            updateList();
+        }
+
+        // View student details
+        let currentStudent = null;
+        function viewDetails(id) {
+            currentStudent = students.find(s => s.id === id);
+            const info = document.getElementById('info');
+            info.innerHTML = `
+                <p><strong>Name:</strong> ${currentStudent.name}</p>
+                <p><strong>ID:</strong> ${currentStudent.id}</p>
+                <p><strong>Age:</strong> ${currentStudent.age}</p>
+                <p><strong>Gender:</strong> ${currentStudent.gender}</p>
+                <p><strong>Current Form:</strong> ${currentStudent.form}</p>
+            `;
+            const ptbody = document.querySelector('#perfTable tbody');
+            ptbody.innerHTML = '';
+            currentStudent.performance.sort((a, b) => a.form - b.form).forEach(p => {
+                const avg = (p.subjects.math + p.subjects.english + p.subjects.science + p.subjects.social) / 4;
+                ptbody.innerHTML += `
+                    <tr>
+                        <td>${p.form}</td>
+                        <td>${p.subjects.math}</td>
+                        <td>${p.subjects.english}</td>
+                        <td>${p.subjects.science}</td>
+                        <td>${p.subjects.social}</td>
+                        <td>${avg.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('pform').value = currentStudent.form;
+            document.getElementById('promoteBtn').disabled = currentStudent.form >= 4;
+            document.getElementById('details').style.display = 'block';
+        }
+
+        // Add/Update performance
+        const perfForm = document.getElementById('perfForm');
+        perfForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formLevel = parseInt(document.getElementById('pform').value);
+            if (isNaN(formLevel) || formLevel < 1 || formLevel > 4) {
+                alert('Please enter a valid form level between 1 and 4.');
+                return;
+            }
+            const math = parseInt(document.getElementById('pmath').value);
+            const english = parseInt(document.getElementById('peng').value);
+            const science = parseInt(document.getElementById('psci').value);
+            const social = parseInt(document.getElementById('psoc').value);
+            if ([math, english, science, social].some(v => isNaN(v) || v < 0 || v > 100)) {
+                alert('Please enter valid scores between 0 and 100 for all subjects.');
+                return;
+            }
+            const perfIndex = currentStudent.performance.findIndex(p => p.form === formLevel);
+            const newPerf = {
+                form: formLevel,
+                subjects: { math, english, science, social }
+            };
+            if (perfIndex !== -1) {
+                currentStudent.performance[perfIndex] = newPerf;
+            } else {
+                currentStudent.performance.push(newPerf);
+            }
+            perfForm.reset();
+            viewDetails(currentStudent.id);
+            updateList();
+        });
+
+        // Promote student
+        document.getElementById('promoteBtn').addEventListener('click', function() {
+            if (currentStudent.form >= 4) return;
+            // Check if performance for current form exists
+            if (!currentStudent.performance.some(p => p.form === currentStudent.form)) {
+                alert('Please add performance for the current form before promoting.');
+                return;
+            }
+            currentStudent.form++;
+            viewDetails(currentStudent.id);
+            updateList();
+        });
+
+        // Close details
+        document.getElementById('closeDetails').addEventListener('click', function() {
+            document.getElementById('details').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
